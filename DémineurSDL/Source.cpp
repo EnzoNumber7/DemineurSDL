@@ -39,6 +39,11 @@ int main(int argc, char* argv[]) {
     int round = 1;
 	int sizeTab,sizeMine;
 
+	int titleScreen = 1;
+	int gameScreen = 0;
+	int winScreen = 0;
+	int loseScreen = 0;
+
 	char difficulties;
 	char choice = 'c';
     sizeTab = easyTab;
@@ -124,7 +129,9 @@ int main(int argc, char* argv[]) {
 	SDL_FreeSurface(winScreen);
 
     // -- CREATION DE LA GRILLE -- //
-    SDL_Surface* grid = SDL_LoadBMP("img/grid.bmp");
+
+	// METTRE LA GRID DU TITLE SCREEN PAR DEFAUT 
+    SDL_Surface* grid = SDL_LoadBMP("img/Easygrid.bmp");
     SDL_Texture* textureGrid = SDL_CreateTextureFromSurface(renderer, grid);
     SDL_FreeSurface(grid);
 	SDL_Rect rectGrid = {0,0,windowWidth,windowHeight};
@@ -135,6 +142,8 @@ int main(int argc, char* argv[]) {
 	
 	// -- BOUCLE PRINCIPALE DE JEU -- //
     while (run) {
+
+
         // -- EVENT -- //
         SDL_Event event;
 		SDL_Rect rect;
@@ -155,27 +164,44 @@ int main(int argc, char* argv[]) {
 				
 						// -- CLICK GAUCHE -- //
 						if (event.button.button == SDL_BUTTON_LEFT) {
-						
-							if (victory(verified, sizeTab, sizeMine) == 0 && lose == 0) {
-								if (round == 1) {
-									mineCreation(lineChoice, columnChoice, numberLine, sizeMine, sizeTab, mine);
-								}
-								// On verifie si le joueur a cliqué sur une mine 
-								if (verificationMine(mine, lineChoice, columnChoice, tab, sizeTab, sizeMine)) {
-									lose = 1;
-								}
-								// Sinon, on verifie s'il y a des mines autour
-								else {
-									mineProximity(tab, mine, lineChoice, columnChoice, verified, sizeMine, sizeTab);
-								}
-							
-								
 
-								round += 1;
+							// -- TITLE SCREEN EVENT -- //
+							if (titleScreen == 1) {
+								// On regarde sur quel boutton on clique en fonction des coordonné
+								// En fonction on crée la grid adéquat dans la parti dédier au render plus bas
 							}
-							else {
-								clickWinLose = 1;
-								break;
+							// -- GAME EVENT -- //
+							else if (gameScreen == 1) {
+								if (victory(verified, sizeTab, sizeMine) == 0 && lose == 0) {
+									if (round == 1) {
+										mineCreation(lineChoice, columnChoice, numberLine, sizeMine, sizeTab, mine);
+									}
+									// On verifie si le joueur a cliqué sur une mine 
+									if (verificationMine(mine, lineChoice, columnChoice, tab, sizeTab, sizeMine)) {
+										lose = 1;
+									}
+									// Sinon, on verifie s'il y a des mines autour
+									else {
+										mineProximity(tab, mine, lineChoice, columnChoice, verified, sizeMine, sizeTab);
+									}
+
+									round += 1;
+								}
+							}
+							// -- WIN SCREEN EVENT -- //
+							else if (winScreen == 1){
+								// On regarde sur quel boutton on clique en fonction des coordonné
+								// En fonction on crée la grid adéquat dans la parti dédier au render plus bas
+
+
+
+								/*clickWinLose = 1;
+								break;*/
+							}
+							// -- LOSE SCREEN EVENT -- //
+							else if (loseScreen == 1) {
+								// On regarde sur quel boutton on clique en fonction des coordonné
+								// En fonction on crée la grid adéquat dans la parti dédier au render plus bas
 							}
 
 						}
@@ -190,7 +216,17 @@ int main(int argc, char* argv[]) {
 
 		// -- RENDER -- //
 
+		// -- CREATION ET AFFICHAGE DES ECRAN PRINCIPAUX (MENU, JEU, ECRAN DE DEFAITE ET VICTOIRE) -- //
 
+		if (titleScreen == 1) {
+			// LA GRILLE AVEC LA DIFFICULTE CHOISI //
+		}
+		else if (winScreen == 1) {
+			// AFFICHER LA MEME GRILLE SI RESTART OU LE MENU PRINCIPAL //
+		}
+		else if (loseScreen == 1) {
+			// AFFICHER LA MEME GRILLE SI RESTART OU LE MENU PRINCIPAL //
+		}
 
 		// On affiche sur la fenêtre SDL les information du tableau texte
 		i = 0;
@@ -199,7 +235,7 @@ int main(int argc, char* argv[]) {
 			placementY = ((i) / numberLine) * 100;
 
 			if (tab[i] != '_' && tab[i] != 'M' && tab[i]!='$') { queryTextureAndRenderCopy(textureDirt, rectCase, window, renderer, placementX, placementY, 0); }
-			if (tab[i] == 'M') { queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY, 0); } // permet d'afficher toute les mines lorsque l'on a perdu
+			if (tab[i] == 'M') { queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY, 0); }
 			else if (tab[i] == '1') { queryTextureAndRenderCopy(textureOne, rectCase, window, renderer, placementX, placementY, 0); }
 			else if (tab[i] == '2') { queryTextureAndRenderCopy(textureTwo, rectCase, window, renderer, placementX, placementY, 0); }
 			else if (tab[i] == '3') { queryTextureAndRenderCopy(textureThree, rectCase, window, renderer, placementX, placementY, 0); }
