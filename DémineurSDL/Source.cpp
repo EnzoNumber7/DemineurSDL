@@ -4,6 +4,9 @@
 #include <time.h>
 #include <math.h>
 
+#define windowWidth 900
+#define windowHeight 900
+
 void Error(const char* message);
 void Destroy(SDL_Window* window, SDL_Renderer* renderer);
 int verificationMine(int* mine, int lineChoice, int columnChoice, char* tab,int sizeTab,int sizeMine);
@@ -11,7 +14,8 @@ void mineProximity(char* tab, int* mine, int lineChoice, int columnChoice, int* 
 int victory(int* verified, int sizeTab, int sizeMine);
 int verificationTab(int* verified, int placement, int sizeTab);
 void mineCreation( int lineChoice, int columnChoice, int numberLine, int sizeMine, int sizeTab, int* mine);
-void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY);
+void putFlag(char* tab, int* mine, int lineChoice, int columnChoice, int* verifiedTab, int sizeTab);
+void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY, int winLose);
 
 int main(int argc, char* argv[]) {
     SDL_Window* window = NULL;
@@ -21,6 +25,7 @@ int main(int argc, char* argv[]) {
     int i = 0;
 	int j = 0;
 	int lose = 0;
+	int clickWinLose = 0;
 
 	int easyTab = 81;
 	int medTab = 256;
@@ -44,8 +49,7 @@ int main(int argc, char* argv[]) {
     int numberLine = (int)sqrt(sizeTab);
 
     // -- INITIALISATION DES VARIABLES POUR L'AFFICHAGE -- //
-    int windowHeight = 900;
-    int windowWidth = 900;
+
     int run = 1;
 
     int placementX = 0;
@@ -74,6 +78,7 @@ int main(int argc, char* argv[]) {
     // -- RECTANGLE UTILISE POUR LES IMAGE -- //
     SDL_Rect rectCase = { 0,0,100,100 };
     SDL_Rect rectFlag = { 0,0,50,100 };
+	SDL_Rect rectWinLose = { 0,0,windowWidth,windowHeight };
 
     // -- CREATION DES SURFACES POUR LES IMAGES --//
     SDL_Surface* one = SDL_LoadBMP("img/one.bmp");
@@ -124,17 +129,17 @@ int main(int argc, char* argv[]) {
     SDL_FreeSurface(grid);
 	SDL_Rect rectGrid = {0,0,windowWidth,windowHeight};
 
-	queryTextureAndRenderCopy(textureGrid, rectGrid, window, renderer, 0, 0);
+	queryTextureAndRenderCopy(textureGrid, rectGrid, window, renderer, 0, 0, 0);
 
     SDL_RenderPresent(renderer);
 	
 	// -- BOUCLE PRINCIPALE DE JEU -- //
     while (run) {
-
         // -- EVENT -- //
         SDL_Event event;
-
-        while (SDL_PollEvent(&event) != 0 || (victory(verified, sizeTab, sizeMine) == 0 && lose == 0 ) ){
+		SDL_Rect rect;
+		SDL_QueryTexture(textureLose, NULL, NULL, &rect.w, &rect.h);
+        while (SDL_PollEvent(&event) != 0 ){
             switch (event.type) {
 				case SDL_QUIT:
 					run = 0;
@@ -157,7 +162,6 @@ int main(int argc, char* argv[]) {
 								}
 								// On verifie si le joueur a cliqué sur une mine 
 								if (verificationMine(mine, lineChoice, columnChoice, tab, sizeTab, sizeMine)) {
-									queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY);
 									lose = 1;
 								}
 								// Sinon, on verifie s'il y a des mines autour
@@ -165,29 +169,12 @@ int main(int argc, char* argv[]) {
 									mineProximity(tab, mine, lineChoice, columnChoice, verified, sizeMine, sizeTab);
 								}
 							
-								// On affiche sur la fenêtre SDL les information du tableau texte
-								i = 0;
-								for (i = 0; i < sizeTab; i++) {
-									placementX = ((i) % numberLine) * 100;
-									placementY = ((i) / numberLine) * 100;
-
-									if (tab[i] != '_' && tab[i] != 'M') { queryTextureAndRenderCopy(textureDirt, rectCase, window, renderer, placementX, placementY); }
-									if (tab[i] == 'M') { queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY); } // permet d'afficher toute les mines lorsque l'on a perdu
-									else if (tab[i] == '1') { queryTextureAndRenderCopy(textureOne, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '2') { queryTextureAndRenderCopy(textureTwo, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '3') { queryTextureAndRenderCopy(textureThree, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '4') { queryTextureAndRenderCopy(textureFour, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '5') { queryTextureAndRenderCopy(textureFive, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '6') { queryTextureAndRenderCopy(textureSix, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '7') { queryTextureAndRenderCopy(textureSeven, rectCase, window, renderer, placementX, placementY); }
-									else if (tab[i] == '8') { queryTextureAndRenderCopy(textureEight, rectCase, window, renderer, placementX, placementY); }
-
-								}
+								
 
 								round += 1;
-								SDL_RenderPresent(renderer);
 							}
 							else {
+								clickWinLose = 1;
 								break;
 							}
 
@@ -195,22 +182,43 @@ int main(int argc, char* argv[]) {
 
 						// -- CLICK DROIT -- //
 						if (event.button.button == SDL_BUTTON_RIGHT){
-							if (victory(verified, sizeTab, sizeMine) == 0 && lose == 0 && tab[placement] == '_') {
-								queryTextureAndRenderCopy(textureFlag, rectFlag, window, renderer, placementX, placementY);
-							}
-						
-
-							SDL_RenderPresent(renderer);
+							putFlag(tab, mine, lineChoice, columnChoice, verified, sizeTab);
+							
 						}
 			}	
         }
-		if (victory(verified, sizeTab, sizeMine)) {
-			// AFFICHER IMAGE VICTOIRE AVEC BTN POUR RECOMMENCER //
-			queryTextureAndRenderCopy(textureWin, rectGrid, window, renderer, 0, 0);
+
+		// -- RENDER -- //
+
+
+
+		// On affiche sur la fenêtre SDL les information du tableau texte
+		i = 0;
+		for (i = 0; i < sizeTab; i++) {
+			placementX = ((i) % numberLine) * 100;
+			placementY = ((i) / numberLine) * 100;
+
+			if (tab[i] != '_' && tab[i] != 'M' && tab[i]!='$') { queryTextureAndRenderCopy(textureDirt, rectCase, window, renderer, placementX, placementY, 0); }
+			if (tab[i] == 'M') { queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY, 0); } // permet d'afficher toute les mines lorsque l'on a perdu
+			else if (tab[i] == '1') { queryTextureAndRenderCopy(textureOne, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '2') { queryTextureAndRenderCopy(textureTwo, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '3') { queryTextureAndRenderCopy(textureThree, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '4') { queryTextureAndRenderCopy(textureFour, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '5') { queryTextureAndRenderCopy(textureFive, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '6') { queryTextureAndRenderCopy(textureSix, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '7') { queryTextureAndRenderCopy(textureSeven, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '8') { queryTextureAndRenderCopy(textureEight, rectCase, window, renderer, placementX, placementY, 0); }
+			else if (tab[i] == '$') { queryTextureAndRenderCopy(textureFlag, rectFlag, window, renderer, placementX, placementY, 0); }
 		}
-		if (lose == 1) {
-			queryTextureAndRenderCopy(textureLose, rectGrid, window, renderer, 0, 0);
+
+		if (victory(verified, sizeTab, sizeMine) && clickWinLose == 1) {
+			queryTextureAndRenderCopy(textureWin, rectWinLose, window, renderer, 0, 0, 1);
 		}
+		if (lose == 1 && clickWinLose == 1) {
+			queryTextureAndRenderCopy(textureLose, rectWinLose, window, renderer, 0, 0, 1);
+		}
+
+		SDL_RenderPresent(renderer);
     }
 
     SDL_DestroyTexture(textureGrid);
@@ -451,15 +459,40 @@ void mineCreation(int lineChoice, int columnChoice, int numberLine, int sizeMine
 	}
 }
 
-void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY) {
+void putFlag (char * tab, int* mine, int lineChoice, int columnChoice, int* verifiedTab, int sizeTab){
+	int numberLine = (int)sqrt(sizeTab);
+	int i = 0;
+	int placement = lineChoice * numberLine + columnChoice;
+	int verified = 0;
+
+	for (i=0;i<sizeTab;i++){
+		if (verifiedTab[i] == placement){
+			verified = 1;
+		}
+	}
+	if (verified == 0){
+		tab[placement] = '$';
+	}
+	else {
+		printf("Erreur, choix imposible");
+	}
+
+}
+
+void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY, int winLose) {
+	
 	if (SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h) != 0) {
 		Error("Impossible de charger la texture");
 		Destroy(window, renderer);
 	}
-
 	rect.x = placementX;
 	rect.y = placementY;
 
+	if (winLose) {
+		rect.w = windowWidth;
+		rect.h = windowHeight;
+	}
+	
 	if (SDL_RenderCopy(renderer, texture, NULL, &rect) != 0) {
 		Error("Impossible d'afficher l'image");
 		Destroy(window, renderer);
