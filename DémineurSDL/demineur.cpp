@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
 									if (round == 1) {
 										mineCreation(lineChoice, columnChoice, numberLine, sizeMine, sizeTab, mine);
 									}
-									// On verifie si le joueur a cliqué sur une mine 
+									// On verifie si le joueur a cliquÃ© sur une mine 
 									if (verificationMine(mine, lineChoice, columnChoice, tab, sizeTab, sizeMine)) {
 										lose = 1;
 									}
@@ -312,7 +312,7 @@ int main(int argc, char* argv[]) {
 			for (i = 0; i < sizeTab; i++) {
 				tab[i] = '_';
 			}
-			// Remplissage du tableau de vérification avec des -1
+			// Remplissage du tableau de vÃ©rification avec des -1
 			for (i = 0; i < sizeTab; i++) {
 				verified[i] = -1;
 			}
@@ -333,7 +333,7 @@ int main(int argc, char* argv[]) {
 				gameScreen = 0;
 		}
 		else if (gameScreen == 1) {
-			// On affiche sur la fenêtre SDL les information du tableau texte
+			// On affiche sur la fenÃªtre SDL les information du tableau texte
 			i = 0;
 			for (i = 0; i < sizeTab; i++) {
 				placementX = ((i) % numberLine) * (windowWidth / numberLine);
@@ -375,7 +375,7 @@ void Destroy(SDL_Window* window, SDL_Renderer* renderer) {
 }
 int verificationMine(int* mine, int lineChoice, int columnChoice, char* tab, int sizeTab, int sizeMine) {
 	
-	// Fonction qui prend en paramètre le tableau contenant le placement des mines, le tableau de jeu, la ligne et la colone séléctionner par le joueur
+	// Fonction qui prend en paramÃ¨tre le tableau contenant le placement des mines, le tableau de jeu, la ligne et la colone sÃ©lÃ©ctionner par le joueur
 	int numberLine = (int)sqrt(sizeTab);
 	int i = 0;
 	int j = 0;
@@ -567,14 +567,14 @@ void mineCreation(int lineChoice, int columnChoice, int numberLine, int sizeMine
 	i = 0;
 	for (i = 0; i < sizeMine; i++) {
 		mine[i] = rand() % sizeTab - 1;
-		// Une mine ne peut pas être la où le joueur à joué son premier tour
+		// Une mine ne peut pas Ãªtre la oÃ¹ le joueur Ã  jouÃ© son premier tour
 		if (mine[i] == placement || mine[i] == placement - 1 || mine[i] == placement + 1 || mine[i] == placement - numberLine || mine[i] == placement - numberLine - 1 || mine[i] == placement - numberLine + 1 || mine[i] == placement + numberLine || mine[i] == placement + numberLine - 1 || mine[i] == placement + numberLine + 1 || mine[i] <= 0 || mine[i] >= sizeTab - 1) {
 
 			i -= 1;
 		}
 		if (i >= 1) {
 			for (j = 0; j < i; j++) {
-				// Deux mines ne peuvent pas être au même endroit
+				// Deux mines ne peuvent pas Ãªtre au mÃªme endroit
 				if (mine[i] == mine[j]) {
 					mine[j] = rand() % sizeTab - 1;
 					j = 0;
