@@ -15,7 +15,7 @@ int victory(int* verified, int sizeTab, int sizeMine);
 int verificationTab(int* verified, int placement, int sizeTab);
 void mineCreation( int lineChoice, int columnChoice, int numberLine, int sizeMine, int sizeTab, int* mine);
 void putFlag(char* tab, int* mine, int lineChoice, int columnChoice, int* verifiedTab, int sizeTab);
-void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY, int winLose);
+void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY, int screen, int numberLine);
 
 int main(int argc, char* argv[]) {
     SDL_Window* window = NULL;
@@ -41,17 +41,18 @@ int main(int argc, char* argv[]) {
 
 	int titleScreen = 1;
 	int gameScreen = 0;
-	int winScreen = 0;
-	int loseScreen = 0;
+	int screenWin = 0;
+	int screenLose = 0;
 
-	char difficulties;
 	char choice = 'c';
-    sizeTab = easyTab;
-	sizeMine = easyMine;
-    char* tab = (char*)malloc(sizeof(char) * sizeTab);
-	int* mine = (int*)malloc(sizeof(int) * sizeMine);
-	int* verified = (int*)malloc(sizeof(int) * sizeTab);
-    int numberLine = (int)sqrt(sizeTab);
+    sizeTab = 0;
+	sizeMine = 0;
+
+	char* tab = 0;
+	int* mine = 0;
+	int* verified = 0;
+	int numberLine = 0;
+
 
     // -- INITIALISATION DES VARIABLES POUR L'AFFICHAGE -- //
 
@@ -62,14 +63,6 @@ int main(int argc, char* argv[]) {
 
 	int nbFrame = 0;
 
-    // -- REMPLISSAGE DES TABLEAUX TEXTE -- // 
-	for (i = 0; i < sizeTab; i++) {
-		tab[i] = '_';
-	}
-	// Remplissage du tableau de vérification avec des -1
-	for (i = 0; i < sizeTab; i++) {
-		verified[i] = -1;
-	}
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
         Error("Initialisation SDL");
 
@@ -131,13 +124,11 @@ int main(int argc, char* argv[]) {
     // -- CREATION DE LA GRILLE -- //
 
 	// METTRE LA GRID DU TITLE SCREEN PAR DEFAUT 
-    SDL_Surface* grid = SDL_LoadBMP("img/Easygrid.bmp");
-    SDL_Texture* textureGrid = SDL_CreateTextureFromSurface(renderer, grid);
-    SDL_FreeSurface(grid);
+    SDL_Surface* title = SDL_LoadBMP("img/titleScreen.bmp");
+    SDL_Texture* textureTitle = SDL_CreateTextureFromSurface(renderer, title);
+    SDL_FreeSurface(title);
 	SDL_Rect rectGrid = {0,0,windowWidth,windowHeight};
-
-	queryTextureAndRenderCopy(textureGrid, rectGrid, window, renderer, 0, 0, 0);
-
+	queryTextureAndRenderCopy(textureTitle, rectGrid, window, renderer, 0, 0, 1, numberLine);
     SDL_RenderPresent(renderer);
 	
 	// -- BOUCLE PRINCIPALE DE JEU -- //
@@ -146,8 +137,7 @@ int main(int argc, char* argv[]) {
 
         // -- EVENT -- //
         SDL_Event event;
-		SDL_Rect rect;
-		SDL_QueryTexture(textureLose, NULL, NULL, &rect.w, &rect.h);
+
         while (SDL_PollEvent(&event) != 0 ){
             switch (event.type) {
 				case SDL_QUIT:
@@ -156,22 +146,40 @@ int main(int argc, char* argv[]) {
 
 				// -- CLICK SOURIS -- //
 				case SDL_MOUSEBUTTONDOWN:
-					placementX = (event.motion.x / 100) * 100;
-					placementY = (event.motion.y / 100) * 100;
-					lineChoice = (placementY /100);
-					columnChoice = (placementX /100);
-					placement = lineChoice * numberLine + columnChoice;
 				
 						// -- CLICK GAUCHE -- //
 						if (event.button.button == SDL_BUTTON_LEFT) {
 
 							// -- TITLE SCREEN EVENT -- //
 							if (titleScreen == 1) {
-								// On regarde sur quel boutton on clique en fonction des coordonné
-								// En fonction on crée la grid adéquat dans la parti dédier au render plus bas
+								if (event.motion.x < 647 && event.motion.x >  195  && event.motion.y < 576  && event.motion.y > 442 ) {
+									// -- GRILLE FACILE -- // 
+									sizeTab = easyTab;
+									sizeMine = easyMine;
+								}
+								else if (event.motion.x < 647 && event.motion.x > 195 && event.motion.y < 710 && event.motion.y > 583) {
+									// -- GRILLE MOYENNE -- //
+									sizeTab = medTab;
+									sizeMine = medMine;
+								}
+								else if (event.motion.x < 648  && event.motion.x > 199 && event.motion.y < 849 && event.motion.y > 719) {
+									// -- GRILLE DIFFICILE -- //
+									sizeTab = hardTab;
+									sizeMine = hardMine;
+								}
 							}
+
 							// -- GAME EVENT -- //
 							else if (gameScreen == 1) {
+								placementX = (event.motion.x / (windowWidth / numberLine)) * (windowWidth / numberLine);
+								placementY = (event.motion.y / (windowHeight / numberLine)) * (windowHeight / numberLine);
+								lineChoice = (placementY / (windowHeight / numberLine));
+								columnChoice = (placementX / (windowWidth / numberLine));
+
+								if (victory(verified, sizeTab, sizeMine)) {
+									win = 1;
+								}
+
 								if (victory(verified, sizeTab, sizeMine) == 0 && lose == 0) {
 									if (round == 1) {
 										mineCreation(lineChoice, columnChoice, numberLine, sizeMine, sizeTab, mine);
@@ -184,32 +192,83 @@ int main(int argc, char* argv[]) {
 									else {
 										mineProximity(tab, mine, lineChoice, columnChoice, verified, sizeMine, sizeTab);
 									}
-
 									round += 1;
+								}
+								else {
+									clickWinLose = 1;
 								}
 							}
 							// -- WIN SCREEN EVENT -- //
-							else if (winScreen == 1){
-								// On regarde sur quel boutton on clique en fonction des coordonné
-								// En fonction on crée la grid adéquat dans la parti dédier au render plus bas
+							else if (screenWin == 1){
 
-
-
-								/*clickWinLose = 1;
-								break;*/
+								// -- RESTART --//
+								if (event.motion.x < 778 && event.motion.x > 539 && event.motion.y < 94  && event.motion.y > 16 ) {
+									i=0;
+									for (i = 0; i < sizeTab; i++) {
+										tab[i] = '_';
+									}
+									for (i = 0; i < sizeTab; i++) {
+										verified[i] = -1;
+									}
+									round = 1;
+									titleScreen = 1;
+									screenWin = 0;
+									clickWinLose = 0;
+									win = 0;
+								}
+								// -- TITLE SCREEN -- //
+								if (event.motion.x < 776 && event.motion.x > 540 && event.motion.y < 178 && event.motion.y > 102) {
+									sizeTab = 0;
+									titleScreen = 1;
+									screenWin = 0;
+									clickWinLose = 0;
+									round = 1;
+									win = 0;
+									queryTextureAndRenderCopy(textureTitle, rectGrid, window, renderer, 0, 0, 1, numberLine);
+								}
 							}
+
 							// -- LOSE SCREEN EVENT -- //
-							else if (loseScreen == 1) {
-								// On regarde sur quel boutton on clique en fonction des coordonné
-								// En fonction on crée la grid adéquat dans la parti dédier au render plus bas
+							else if (screenLose == 1) {
+								// -- RESTART -- //
+								if (event.motion.x < 707 && event.motion.x > 205 && event.motion.y < 451 && event.motion.y > 403) {
+									i=0;
+									for (i = 0; i < sizeTab; i++) {
+										tab[i] = '_';
+									}
+									for (i = 0; i < sizeTab; i++) {
+										verified[i] = -1;
+									}
+
+									round = 1;
+									screenLose = 0;
+									lose = 0;
+									clickWinLose = 0;
+									titleScreen = 1;
+								}
+								// -- TITLE SCREEN -- //
+								if (event.motion.x < 708 && event.motion.x > 205 && event.motion.y < 512 && event.motion.y > 465) {
+									sizeTab = 0;
+									screenLose = 0;
+									round = 1;
+									lose = 0;
+									titleScreen = 1;
+									clickWinLose = 0;
+									queryTextureAndRenderCopy(textureTitle, rectGrid, window, renderer, 0, 0, 1, numberLine);
+								}
 							}
 
 						}
 
 						// -- CLICK DROIT -- //
 						if (event.button.button == SDL_BUTTON_RIGHT){
-							putFlag(tab, mine, lineChoice, columnChoice, verified, sizeTab);
-							
+							if (gameScreen == 1) {
+								placementX = (event.motion.x / (windowWidth / numberLine)) * (windowWidth / numberLine);
+								placementY = (event.motion.y / (windowHeight / numberLine)) * (windowHeight / numberLine);
+								lineChoice = (placementY / (windowHeight / numberLine));
+								columnChoice = (placementX / (windowWidth / numberLine));
+								putFlag(tab, mine, lineChoice, columnChoice, verified, sizeTab);
+							}
 						}
 			}	
         }
@@ -218,52 +277,92 @@ int main(int argc, char* argv[]) {
 
 		// -- CREATION ET AFFICHAGE DES ECRAN PRINCIPAUX (MENU, JEU, ECRAN DE DEFAITE ET VICTOIRE) -- //
 
-		if (titleScreen == 1) {
+		if (titleScreen == 1 && sizeTab != 0) {
 			// LA GRILLE AVEC LA DIFFICULTE CHOISI //
-		}
-		else if (winScreen == 1) {
-			// AFFICHER LA MEME GRILLE SI RESTART OU LE MENU PRINCIPAL //
-		}
-		else if (loseScreen == 1) {
-			// AFFICHER LA MEME GRILLE SI RESTART OU LE MENU PRINCIPAL //
-		}
+			// -- GRILLE FACILE -- //
+			if (sizeTab == easyTab) {
+				SDL_Surface* gridEasy = SDL_LoadBMP("img/gridEasy.bmp");
+				SDL_Texture* textureGridEasy = SDL_CreateTextureFromSurface(renderer, gridEasy);
+				SDL_FreeSurface(gridEasy);
+				queryTextureAndRenderCopy(textureGridEasy, rectGrid, window, renderer, 0, 0, 1, numberLine);
+			}
 
-		// On affiche sur la fenêtre SDL les information du tableau texte
-		i = 0;
-		for (i = 0; i < sizeTab; i++) {
-			placementX = ((i) % numberLine) * 100;
-			placementY = ((i) / numberLine) * 100;
+			// -- GRILLE MOYENNE -- //
+			if (sizeTab == medTab) {
+				SDL_Surface* gridMed = SDL_LoadBMP("img/gridMed.bmp");
+				SDL_Texture* textureGridMed = SDL_CreateTextureFromSurface(renderer, gridMed);
+				SDL_FreeSurface(gridMed);
+				queryTextureAndRenderCopy(textureGridMed, rectGrid, window, renderer, 0, 0, 1, numberLine);
+			}
 
-			if (tab[i] != '_' && tab[i] != 'M' && tab[i]!='$') { queryTextureAndRenderCopy(textureDirt, rectCase, window, renderer, placementX, placementY, 0); }
-			if (tab[i] == 'M') { queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '1') { queryTextureAndRenderCopy(textureOne, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '2') { queryTextureAndRenderCopy(textureTwo, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '3') { queryTextureAndRenderCopy(textureThree, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '4') { queryTextureAndRenderCopy(textureFour, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '5') { queryTextureAndRenderCopy(textureFive, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '6') { queryTextureAndRenderCopy(textureSix, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '7') { queryTextureAndRenderCopy(textureSeven, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '8') { queryTextureAndRenderCopy(textureEight, rectCase, window, renderer, placementX, placementY, 0); }
-			else if (tab[i] == '$') { queryTextureAndRenderCopy(textureFlag, rectFlag, window, renderer, placementX, placementY, 0); }
-		}
+			// -- GRILLE DIFFICILE  -- //
+			if (sizeTab == hardTab) {
+				SDL_Surface* gridHard = SDL_LoadBMP("img/gridHard.bmp");
+				SDL_Texture* textureGridHard = SDL_CreateTextureFromSurface(renderer, gridHard);
+				SDL_FreeSurface(gridHard);
+				queryTextureAndRenderCopy(textureGridHard, rectGrid, window, renderer, 0, 0, 1 ,numberLine);
+			}
+			// -- VRAIABLE NESSECITANT sizeTab -- //
+			tab = (char*)malloc(sizeof(char) * sizeTab);
+			mine = (int*)malloc(sizeof(int) * sizeMine);
+			verified = (int*)malloc(sizeof(int) * sizeTab);
+			numberLine = (int)sqrt(sizeTab);
 
-		if (victory(verified, sizeTab, sizeMine) && clickWinLose == 1) {
-			queryTextureAndRenderCopy(textureWin, rectWinLose, window, renderer, 0, 0, 1);
+			// -- REMPLISSAGE DES TABLEAUX TEXTE -- // 
+			for (i = 0; i < sizeTab; i++) {
+				tab[i] = '_';
+			}
+			// Remplissage du tableau de vérification avec des -1
+			for (i = 0; i < sizeTab; i++) {
+				verified[i] = -1;
+			}
+			
+
+			titleScreen = 0;
+			gameScreen = 1;
+
 		}
-		if (lose == 1 && clickWinLose == 1) {
-			queryTextureAndRenderCopy(textureLose, rectWinLose, window, renderer, 0, 0, 1);
+		else if (win == 1  && clickWinLose == 1) {
+			queryTextureAndRenderCopy(textureWin, rectWinLose, window, renderer, 0, 0, 1, numberLine);
+			screenWin = 1;
+			gameScreen = 0;
+		}
+		else if (lose == 1 && clickWinLose == 1) {
+				queryTextureAndRenderCopy(textureLose, rectWinLose, window, renderer, 0, 0, 1, numberLine);
+				screenLose = 1;
+				gameScreen = 0;
+		}
+		else if (gameScreen == 1) {
+			// On affiche sur la fenêtre SDL les information du tableau texte
+			i = 0;
+			for (i = 0; i < sizeTab; i++) {
+				placementX = ((i) % numberLine) * (windowWidth / numberLine);
+				placementY = ((i) / numberLine) * (windowHeight / numberLine);
+				
+
+				if (tab[i] != '_' && tab[i] != 'M' && tab[i] != '$') { queryTextureAndRenderCopy(textureDirt, rectCase, window, renderer, placementX, placementY, 0, numberLine); }
+				if (tab[i] == 'M') { queryTextureAndRenderCopy(textureTnt, rectCase, window, renderer, placementX, placementY, 0, numberLine); }
+				else if (tab[i] == '1') { queryTextureAndRenderCopy(textureOne, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '2') { queryTextureAndRenderCopy(textureTwo, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '3') { queryTextureAndRenderCopy(textureThree, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '4') { queryTextureAndRenderCopy(textureFour, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '5') { queryTextureAndRenderCopy(textureFive, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '6') { queryTextureAndRenderCopy(textureSix, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '7') { queryTextureAndRenderCopy(textureSeven, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '8') { queryTextureAndRenderCopy(textureEight, rectCase, window, renderer, placementX, placementY, 0 ,numberLine); }
+				else if (tab[i] == '$') { queryTextureAndRenderCopy(textureFlag, rectFlag, window, renderer, placementX, placementY, 0 ,numberLine); }
+			}
 		}
 
 		SDL_RenderPresent(renderer);
     }
 
-    SDL_DestroyTexture(textureGrid);
+    SDL_DestroyRenderer(renderer);
     Destroy(window, renderer);
     return EXIT_SUCCESS;
 }
 
-void Error(const char* message)
-{
+void Error(const char* message){
     SDL_Log("ERREUR : %s > %s\n", message, SDL_GetError());
     SDL_Quit();
     exit(EXIT_FAILURE);
@@ -487,12 +586,6 @@ void mineCreation(int lineChoice, int columnChoice, int numberLine, int sizeMine
 			}
 		}
 	}
-
-
-	// -------------------------- TEMPORAIRE ----------------------------------------- //
-	for (i = 0; i < 10; i++) {
-		SDL_Log("%d / ", mine[i]);
-	}
 }
 
 void putFlag (char * tab, int* mine, int lineChoice, int columnChoice, int* verifiedTab, int sizeTab){
@@ -515,7 +608,7 @@ void putFlag (char * tab, int* mine, int lineChoice, int columnChoice, int* veri
 
 }
 
-void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY, int winLose) {
+void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* window, SDL_Renderer* renderer, int placementX, int placementY, int screen, int numberLine) {
 	
 	if (SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h) != 0) {
 		Error("Impossible de charger la texture");
@@ -524,9 +617,14 @@ void queryTextureAndRenderCopy(SDL_Texture* texture, SDL_Rect rect, SDL_Window* 
 	rect.x = placementX;
 	rect.y = placementY;
 
-	if (winLose) {
+	if (screen) {
 		rect.w = windowWidth;
 		rect.h = windowHeight;
+	}
+
+	if (!screen) {
+		rect.w = (windowWidth / numberLine);
+		rect.h = (windowHeight / numberLine);
 	}
 	
 	if (SDL_RenderCopy(renderer, texture, NULL, &rect) != 0) {
